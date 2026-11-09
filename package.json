@@ -1,0 +1,8 @@
+{
+  "name": "adgenie",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AdGenie - Trình tạo caption mạng xã hội bằng AI (Gemini)",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

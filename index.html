@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141B4D">
+<title>AdGenie – Trình tạo caption mạng xã hội bằng AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Be Vietnam Pro"', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'] },
+        colors: {
+          navy: { 900: '#0B1033', 800: '#141B4D', 700: '#1E2766', 600: '#2B3585' },
+          lav: { 50: '#F8F7FF', 100: '#F1EFFF', 200: '#E3E0FF' },
+          electric: { blue: '#3B5BFF', purple: '#7C3AED' },
+          ink: '#141B4D',
+          mute: '#64698C'
+        },
+        boxShadow: { card: '0 20px 45px -20px rgba(43, 53, 133, 0.28)' }
+      }
+    }
+  };
+</script>
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background:
+      radial-gradient(900px 420px at 85% -80px, rgba(124, 58, 237, .13), transparent 70%),
+      radial-gradient(700px 380px at -10% 0, rgba(59, 91, 255, .10), transparent 70%),
+      #F6F5FF;
+    color: #141B4D;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :focus-visible { outline: 3px solid rgba(124, 58, 237, .55); outline-offset: 2px; border-radius: 12px; }
+  input, textarea, select { font-size: 16px; } /* tránh iOS Safari tự phóng to khi focus */
+
+  .field { width: 100%; border: 1px solid #E3E0FF; background: #fff; border-radius: 14px; padding: 12px 14px; color: #141B4D; transition: border-color .15s, box-shadow .15s; }
+  .field::placeholder { color: #9A9EBF; }
+  .field:focus { border-color: #7C3AED; outline: none; box-shadow: 0 0 0 4px rgba(124, 58, 237, .14); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; font-weight: 600; font-size: 14px; padding: 11px 20px; transition: transform .15s, box-shadow .15s, background .15s, color .15s, border-color .15s; cursor: pointer; white-space: nowrap; }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { color: #fff; background: linear-gradient(135deg, #3B5BFF 0%, #7C3AED 100%); box-shadow: 0 10px 24px -10px rgba(91, 72, 240, .7); }
+  .btn-primary:hover { box-shadow: 0 14px 28px -10px rgba(91, 72, 240, .85); filter: brightness(1.05); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+  .btn-outline { color: #2B3585; background: #fff; border: 1.5px solid #CFCBFA; }
+  .btn-outline:hover { border-color: #7C3AED; color: #7C3AED; background: #F8F7FF; }
+  .btn-soft { color: #4F3BD9; background: #EEEBFF; }
+  .btn-soft:hover { background: #E3DFFF; }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+  .link-danger { color: #64698C; font-size: 13px; font-weight: 500; padding: 6px 8px; border-radius: 999px; cursor: pointer; }
+  .link-danger:hover { color: #C53030; background: #FEF2F2; }
+  .link-plain { color: #4F3BD9; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 6px; }
+  .link-plain:hover { text-decoration: underline; }
+
+  .chip { padding: 9px 16px; font-size: 14px; font-weight: 500; border: 1.5px solid #E3E0FF; border-radius: 999px; background: #fff; color: #2B3585; cursor: pointer; transition: all .15s; }
+  .chip:hover { border-color: #7C3AED; color: #7C3AED; }
+  .chip[aria-pressed="true"], .chip[aria-checked="true"] { color: #fff; border-color: transparent; background: linear-gradient(135deg, #2B3585 0%, #5B3FD6 100%); box-shadow: 0 8px 18px -8px rgba(43, 53, 133, .75); }
+  .chip-tone[aria-checked="true"] { background: linear-gradient(135deg, #3B5BFF 0%, #7C3AED 100%); }
+  .chip-tone { flex: 1 1 0; min-width: 0; text-align: center; padding: 10px 8px; }
+  .tag { padding: 7px 14px; font-size: 13px; font-weight: 500; border-radius: 999px; background: #EEEBFF; color: #4F3BD9; cursor: pointer; transition: background .15s, color .15s; }
+  .tag:hover { background: #4F3BD9; color: #fff; }
+
+  .tab-pill { padding: 9px 18px; font-size: 14px; font-weight: 600; color: #B9BEE6; border-radius: 999px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .tab-pill:hover { color: #fff; }
+  .tab-pill[aria-selected="true"] { background: #fff; color: #141B4D; box-shadow: 0 6px 14px -6px rgba(0,0,0,.35); }
+  .tab-light { color: #64698C; }
+  .tab-light:hover { color: #141B4D; }
+  .tab-light[aria-selected="true"] { background: #141B4D; color: #fff; }
+
+  .skeleton { background: linear-gradient(90deg, #ECE9FF 25%, #F7F5FF 50%, #ECE9FF 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; border-radius: 10px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pulse-dot { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 12px); max-width: calc(100vw - 32px); text-align: center; background: #141B4D; color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 14px; font-weight: 500; box-shadow: 0 16px 30px -12px rgba(11, 16, 51, .6); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 80; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .cal-day { aspect-ratio: 1 / 1; min-height: 40px; border-radius: 14px; font-size: 14px; font-weight: 500; position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #141B4D; transition: background .15s; }
+  .cal-day:hover { background: #F1EFFF; }
+  .cal-day.today { font-weight: 800; color: #5B3FD6; box-shadow: inset 0 0 0 1.5px #CFCBFA; }
+  .cal-day.sel { background: linear-gradient(135deg, #3B5BFF 0%, #7C3AED 100%); color: #fff; box-shadow: 0 8px 16px -8px rgba(91, 72, 240, .8); }
+  .cal-day.sel.today { color: #fff; }
+  .cal-day .dot { position: absolute; bottom: 6px; width: 5px; height: 5px; border-radius: 50%; background: #7C3AED; }
+  .cal-day.sel .dot { background: #fff; }
+
+  .rise { animation: rise .35s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .hidden-view { display: none; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<!-- ================= HEADER ================= -->
+<header class="sticky top-0 z-40 px-3 sm:px-6 pt-3" style="padding-top: calc(12px + env(safe-area-inset-top, 0px));">
+  <div class="mx-auto max-w-6xl rounded-full bg-navy-800 text-white shadow-xl shadow-indigo-900/25 pl-2 pr-2 sm:pl-3 sm:pr-3 py-2 flex items-center justify-between gap-2">
+    <a href="#" class="flex items-center gap-2.5 pl-1 rounded-full" aria-label="AdGenie" id="brand">
+      <span class="grid place-items-center w-10 h-10 rounded-2xl" style="background: linear-gradient(135deg, #3B5BFF, #7C3AED); box-shadow: 0 8px 18px -6px rgba(124,58,237,.8);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8L19 15z"/></svg>
+      </span>
+      <span class="text-lg font-bold tracking-tight">AdGenie</span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-1" role="tablist" aria-label="Chức năng">
+      <button class="tab-pill" role="tab" data-tab="create" aria-selected="true">Tạo caption</button>
+      <button class="tab-pill" role="tab" data-tab="schedule" aria-selected="false">Lịch đăng <span class="schedCount opacity-70 font-medium"></span></button>
+      <button class="tab-pill" role="tab" data-tab="history" aria-selected="false">Lịch sử <span class="histCount opacity-70 font-medium"></span></button>
+    </nav>
+
+    <button id="aiStatus" type="button" class="flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/15 pl-3 pr-4 py-2 text-sm font-medium transition" title="Bấm để kiểm tra lại kết nối AI" aria-live="polite">
+      <span id="aiDot" class="w-2.5 h-2.5 rounded-full bg-gray-400 pulse-dot"></span>
+      <span id="aiLabel">Đang kiểm tra</span>
+    </button>
+  </div>
+
+  <!-- Tabs trên điện thoại -->
+  <nav class="md:hidden mx-auto max-w-6xl mt-3 rounded-full bg-white border border-gray-100 shadow-lg shadow-indigo-900/5 p-1.5 flex gap-1" role="tablist" aria-label="Chức năng">
+    <button class="tab-pill tab-light flex-1" role="tab" data-tab="create" aria-selected="true">Tạo caption</button>
+    <button class="tab-pill tab-light flex-1" role="tab" data-tab="schedule" aria-selected="false">Lịch đăng <span class="schedCount font-medium"></span></button>
+    <button class="tab-pill tab-light flex-1" role="tab" data-tab="history" aria-selected="false">Lịch sử <span class="histCount font-medium"></span></button>
+  </nav>
+</header>
+
+<main class="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
+
+  <!-- ================= TẠO CAPTION ================= -->
+  <section id="view-create" class="space-y-6">
+    <div class="relative overflow-hidden rounded-3xl border border-lav-200 bg-lav-100 px-6 py-8 sm:px-10 sm:py-10 shadow-card">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full opacity-60" style="background: radial-gradient(circle, rgba(124,58,237,.28), transparent 70%);" aria-hidden="true"></div>
+      <div class="absolute right-24 -bottom-24 w-56 h-56 rounded-full opacity-60" style="background: radial-gradient(circle, rgba(59,91,255,.22), transparent 70%);" aria-hidden="true"></div>
+      <div class="relative max-w-2xl">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight text-navy-800">Caption đúng chất từng nền tảng, tạo trong vài giây</h1>
+        <p class="mt-3 text-mute leading-relaxed">Nhập sản phẩm, chọn nền tảng và tông giọng. AdGenie viết sẵn caption, headline và hashtag để bạn chia sẻ ngay.</p>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <span class="rounded-full bg-white border border-lav-200 px-4 py-1.5 text-sm font-medium text-navy-700">3 caption</span>
+          <span class="rounded-full bg-white border border-lav-200 px-4 py-1.5 text-sm font-medium text-navy-700">3 headline</span>
+          <span class="rounded-full bg-white border border-lav-200 px-4 py-1.5 text-sm font-medium text-navy-700">5 hashtag</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-[400px_1fr] gap-6 items-start">
+      <form id="genForm" class="rounded-3xl bg-white border border-gray-100 shadow-xl shadow-indigo-900/5 p-6 sm:p-7 space-y-5 lg:sticky lg:top-28" novalidate>
+        <div>
+          <label for="product" class="block text-sm font-semibold mb-2">Tên sản phẩm</label>
+          <input id="product" class="field" maxlength="120" placeholder="Ví dụ: Cà phê rang xay Núi Lửa" autocomplete="off">
+        </div>
+        <div>
+          <label for="description" class="block text-sm font-semibold mb-2">Mô tả ngắn</label>
+          <textarea id="description" class="field" rows="3" maxlength="600" placeholder="Điểm nổi bật, giá, ưu đãi (nếu có)"></textarea>
+        </div>
+        <div>
+          <label for="audience" class="block text-sm font-semibold mb-2">Đối tượng khách hàng</label>
+          <input id="audience" class="field" maxlength="160" placeholder="Ví dụ: Dân văn phòng 22–35 tuổi" autocomplete="off">
+        </div>
+        <div>
+          <span class="block text-sm font-semibold mb-2" id="platLabel">Nền tảng</span>
+          <div id="platforms" class="flex flex-wrap gap-2" role="group" aria-labelledby="platLabel"></div>
+        </div>
+        <div>
+          <span class="block text-sm font-semibold mb-2" id="toneLabel">Tông giọng</span>
+          <div id="tones" class="flex gap-2" role="radiogroup" aria-labelledby="toneLabel"></div>
+        </div>
+        <button id="genBtn" type="submit" class="btn btn-primary w-full py-3.5 text-base">Tạo caption</button>
+        <p id="formError" class="text-sm text-red-600 hidden" role="alert"></p>
+      </form>
+
+      <div id="resultsPane" class="rounded-3xl bg-white border border-gray-100 shadow-xl shadow-indigo-900/5 p-6 sm:p-8 min-h-[320px]" aria-live="polite">
+        <div id="empty" class="py-10 lg:py-16 max-w-sm mx-auto text-center">
+          <div class="mx-auto mb-5 grid place-items-center w-16 h-16 rounded-3xl bg-lav-100 text-electric-purple">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8L19 15z"/></svg>
+          </div>
+          <p class="text-lg font-semibold">Kết quả sẽ hiện ở đây</p>
+          <p class="text-mute mt-2 leading-relaxed">Điền thông tin sản phẩm rồi bấm “Tạo caption” để nhận nội dung đúng văn phong của nền tảng bạn chọn.</p>
+        </div>
+        <div id="loading" class="hidden space-y-4">
+          <div class="rounded-2xl bg-lav-50 border border-lav-200 p-5 space-y-3"><div class="skeleton h-4 w-full"></div><div class="skeleton h-4 w-11/12"></div><div class="skeleton h-4 w-3/4"></div></div>
+          <div class="rounded-2xl bg-lav-50 border border-lav-200 p-5 space-y-3"><div class="skeleton h-4 w-full"></div><div class="skeleton h-4 w-10/12"></div><div class="skeleton h-4 w-2/3"></div></div>
+          <div class="rounded-2xl bg-lav-50 border border-lav-200 p-5 space-y-3"><div class="skeleton h-4 w-full"></div><div class="skeleton h-4 w-9/12"></div></div>
+          <p class="text-sm text-mute">Đang viết nội dung, thường mất 5–15 giây…</p>
+        </div>
+        <div id="errorBox" class="hidden max-w-md mx-auto text-center py-8" role="alert">
+          <div class="mx-auto mb-4 grid place-items-center w-14 h-14 rounded-3xl bg-red-50 text-red-500">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+          </div>
+          <p class="font-semibold text-red-600" id="errorTitle">Chưa tạo được nội dung</p>
+          <p class="text-mute mt-2 leading-relaxed text-sm" id="errorMsg"></p>
+          <button id="retryBtn" class="btn btn-outline btn-sm mt-5">Thử lại</button>
+        </div>
+        <div id="results" class="hidden"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LỊCH ĐĂNG ================= -->
+  <section id="view-schedule" class="hidden-view">
+    <div class="grid lg:grid-cols-[400px_1fr] gap-6 items-start">
+      <form id="schedForm" class="rounded-3xl bg-white border border-gray-100 shadow-xl shadow-indigo-900/5 p-6 sm:p-7 space-y-5" novalidate>
+        <h2 class="text-xl font-bold" id="schedFormTitle">Lên lịch bài đăng</h2>
+        <div>
+          <label for="schedPick" class="block text-sm font-semibold mb-2">Chọn caption đã tạo</label>
+          <select id="schedPick" class="field"><option value="">Tự viết caption</option></select>
+        </div>
+        <div>
+          <label for="schedText" class="block text-sm font-semibold mb-2">Nội dung bài đăng</label>
+          <textarea id="schedText" class="field" rows="6" placeholder="Chọn một caption ở trên hoặc tự viết tại đây"></textarea>
+          <p id="schedCount2" class="text-xs text-mute mt-2"></p>
+        </div>
+        <div>
+          <label for="schedPlat" class="block text-sm font-semibold mb-2">Nền tảng</label>
+          <select id="schedPlat" class="field"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="schedDate" class="block text-sm font-semibold mb-2">Ngày đăng</label>
+            <input id="schedDate" type="date" class="field">
+          </div>
+          <div>
+            <label for="schedTime" class="block text-sm font-semibold mb-2">Giờ đăng</label>
+            <input id="schedTime" type="time" class="field" value="09:00">
+          </div>
+        </div>
+        <p id="schedExtraNote" class="text-xs text-mute hidden">Bài này kèm headline và hashtag khi chia sẻ.</p>
+        <p id="schedError" class="text-sm text-red-600 hidden" role="alert"></p>
+        <div class="flex gap-3">
+          <button id="schedSave" type="submit" class="btn btn-primary flex-1 py-3.5">Thêm vào lịch</button>
+          <button id="schedCancelEdit" type="button" class="btn btn-outline hidden">Hủy sửa</button>
+        </div>
+      </form>
+
+      <div class="space-y-6">
+        <div class="rounded-3xl bg-white border border-gray-100 shadow-xl shadow-indigo-900/5 p-5 sm:p-7">
+          <div class="flex items-center justify-between mb-4 gap-2">
+            <h2 class="text-xl font-bold" id="calTitle"></h2>
+            <div class="flex gap-1.5">
+              <button id="calPrev" class="btn btn-outline btn-sm" aria-label="Tháng trước">‹</button>
+              <button id="calToday" class="btn btn-soft btn-sm">Hôm nay</button>
+              <button id="calNext" class="btn btn-outline btn-sm" aria-label="Tháng sau">›</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-7 text-center text-xs font-medium text-mute mb-1" id="calHead"></div>
+          <div class="grid grid-cols-7 gap-1" id="calGrid"></div>
+        </div>
+
+        <div class="rounded-3xl bg-white border border-gray-100 shadow-xl shadow-indigo-900/5 p-5 sm:p-7">
+          <div class="flex items-baseline justify-between mb-2 gap-2">
+            <h3 class="text-lg font-bold" id="listTitle">Sắp đăng</h3>
+            <button id="listAll" class="link-plain hidden">Xem tất cả</button>
+          </div>
+          <div id="schedList" class="divide-y divide-gray-100"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LỊCH SỬ ================= -->
+  <section id="view-history" class="hidden-view">
+    <div class="rounded-3xl bg-white border border-gray-100 shadow-xl shadow-indigo-900/5 p-5 sm:p-8">
+      <div class="flex items-baseline justify-between mb-2 gap-4">
+        <h2 class="text-xl font-bold">Lịch sử tạo</h2>
+        <button id="clearHist" class="link-danger hidden">Xóa toàn bộ lịch sử</button>
+      </div>
+      <div id="histList" class="divide-y divide-gray-100"></div>
+      <p id="histEmpty" class="text-mute py-10 text-center hidden">Chưa có lần tạo nào. Mỗi lần tạo thành công sẽ được lưu tự động trong trình duyệt này.</p>
+    </div>
+  </section>
+</main>
+
+<!-- Hộp thoại hướng dẫn khi trình duyệt không hỗ trợ Web Share API -->
+<div id="shareDialog" class="fixed inset-0 z-[70] hidden items-end sm:items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+  <div id="shareBackdrop" class="absolute inset-0 bg-navy-900/60"></div>
+  <div class="relative w-full max-w-md rounded-3xl bg-white shadow-2xl p-6 sm:p-7 rise" style="padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));">
+    <h3 id="shareTitle" class="text-lg font-bold">Chia sẻ lên <span id="shareDlgPlat"></span></h3>
+    <p id="shareDlgIntro" class="text-sm text-mute mt-1.5 leading-relaxed"></p>
+    <ol class="mt-4 space-y-3 text-sm">
+      <li class="flex gap-3"><span id="shareStep1" class="shrink-0 grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">1</span><span id="shareStep1Text"></span></li>
+      <li class="flex gap-3"><span class="shrink-0 grid place-items-center w-6 h-6 rounded-full bg-lav-200 text-navy-700 text-xs font-bold">2</span><span>Mở <b id="shareDlgPlat2"></b> bằng nút bên dưới và tạo bài đăng mới.</span></li>
+      <li class="flex gap-3"><span class="shrink-0 grid place-items-center w-6 h-6 rounded-full bg-lav-200 text-navy-700 text-xs font-bold">3</span><span>Dán nội dung vào ô soạn bài (giữ ô nhập rồi chọn Dán).</span></li>
+    </ol>
+    <textarea id="shareDlgText" class="field mt-4 text-sm hidden" rows="5" readonly aria-label="Nội dung cần sao chép"></textarea>
+    <div class="mt-5 flex flex-col-reverse sm:flex-row gap-3">
+      <button id="shareDlgClose" type="button" class="btn btn-outline flex-1">Đóng</button>
+      <a id="shareDlgOpen" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary flex-1"></a>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- Cấu hình ---------- */
+  // shareUrl: nếu nền tảng hỗ trợ điền sẵn nội dung qua link web thì dùng, nếu không mở trang chủ/soạn bài.
+  const PLATFORMS = [
+    { id: 'facebook',  label: 'Facebook',  max: 2200, url: 'https://www.facebook.com/' },
+    { id: 'instagram', label: 'Instagram', max: 2200, url: 'https://www.instagram.com/' },
+    { id: 'tiktok',    label: 'TikTok',    max: 2200, url: 'https://www.tiktok.com/upload' },
+    { id: 'linkedin',  label: 'LinkedIn',  max: 2200, url: 'https://www.linkedin.com/feed/' },
+    { id: 'threads',   label: 'Threads',   max: 500,  url: 'https://www.threads.net/' },
+    { id: 'x',         label: 'X',         max: 280,  url: 'https://x.com/compose/post',
+      shareUrl: (t) => 'https://x.com/intent/post?text=' + encodeURIComponent(t) }
+  ];
+  const TONES = ['Hài hước', 'Trang trọng', 'Trẻ trung'];
+  const WARN_RATIO = 0.9; // vàng khi đạt 90% giới hạn, đỏ khi vượt giới hạn
+  const KEY_HIST = 'adgenie.history.v1';
+  const KEY_SCHED = 'adgenie.schedule.v1';
+  const HIST_MAX = 50;
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const platInfo = (id) => PLATFORMS.find((p) => p.id === id) || PLATFORMS[0];
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const fmtNum = (n) => n.toLocaleString('vi-VN');
+
+  const ICON_SHARE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>';
+
+  /* ---------- Lưu trữ ---------- */
+  const load = (k) => { try { const v = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) { toast('Không lưu được vào trình duyệt (bộ nhớ đầy hoặc bị chặn).'); } };
+
+  const state = {
+    platform: 'facebook',
+    tone: 'Trẻ trung',
+    input: null,
+    result: null,
+    history: load(KEY_HIST),
+    schedule: load(KEY_SCHED),
+    editingId: null,
+    schedExtra: null,      // { headline, hashtags } kèm theo bài đang soạn trong Lịch đăng
+    pickOpts: [],
+    calMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    selectedDay: null,
+    busy: false
+  };
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function toast(msg, ms = 1800) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+  }
+
+  async function copyQuiet(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (__) {}
+      ta.remove();
+      return ok;
+    }
+  }
+  async function copyText(text) {
+    const ok = await copyQuiet(text);
+    toast(ok ? 'Đã sao chép!' : 'Không sao chép được, hãy bôi đen và sao chép thủ công.');
+  }
+
+  /* ---------- Trạng thái kết nối AI (header) ---------- */
+  const STATUS = {
+    checking: ['bg-gray-400 pulse-dot', 'Đang kiểm tra'],
+    ok:       ['bg-emerald-400', 'AI sẵn sàng'],
+    nokey:    ['bg-amber-400', 'Thiếu API key'],
+    badkey:   ['bg-red-400', 'API key lỗi'],
+    offline:  ['bg-red-400', 'Mất kết nối']
+  };
+  function setStatus(key) {
+    const [cls, label] = STATUS[key] || STATUS.offline;
+    $('#aiDot').className = 'w-2.5 h-2.5 rounded-full ' + cls;
+    $('#aiLabel').textContent = label;
+  }
+  // Máy chủ (api/generate.js) trả 405 với yêu cầu GET: nghĩa là proxy đang chạy.
+  async function checkAI() {
+    if (!navigator.onLine) return setStatus('offline');
+    setStatus('checking');
+    try {
+      const r = await fetch('/api/generate', { method: 'GET', cache: 'no-store' });
+      setStatus(r.status === 405 ? 'ok' : 'offline');
+    } catch (_) { setStatus('offline'); }
+  }
+  $('#aiStatus').addEventListener('click', checkAI);
+  window.addEventListener('online', checkAI);
+  window.addEventListener('offline', () => setStatus('offline'));
+
+  /* ---------- Tabs ---------- */
+  function showTab(name) {
+    $$('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+    ['create', 'schedule', 'history'].forEach((n) => $('#view-' + n).classList.toggle('hidden-view', n !== name));
+    if (name === 'schedule') { fillPick(); renderCalendar(); renderSchedList(); }
+    if (name === 'history') renderHistory();
+    window.scrollTo({ top: 0 });
+  }
+  $$('[data-tab]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  $('#brand').addEventListener('click', (e) => { e.preventDefault(); showTab('create'); });
+
+  function updateCounts() {
+    $$('.schedCount').forEach((el) => { el.textContent = state.schedule.length ? `(${state.schedule.length})` : ''; });
+    $$('.histCount').forEach((el) => { el.textContent = state.history.length ? `(${state.history.length})` : ''; });
+  }
+
+  /* ---------- Chọn nền tảng & tông giọng ---------- */
+  function renderPlatforms() {
+    $('#platforms').innerHTML = PLATFORMS.map((p) =>
+      `<button type="button" class="chip" data-p="${p.id}" aria-pressed="${p.id === state.platform}">${p.label}</button>`).join('');
+  }
+  $('#platforms').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-p]');
+    if (!b) return;
+    state.platform = b.dataset.p;
+    renderPlatforms();
+  });
+
+  function renderTones() {
+    $('#tones').innerHTML = TONES.map((t) =>
+      `<button type="button" role="radio" class="chip chip-tone" data-t="${esc(t)}" aria-checked="${t === state.tone}">${esc(t)}</button>`).join('');
+  }
+  $('#tones').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-t]');
+    if (!b) return;
+    state.tone = b.dataset.t;
+    renderTones();
+  });
+  $('#tones').addEventListener('keydown', (e) => {
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    const i = TONES.indexOf(state.tone);
+    const step = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
+    state.tone = TONES[(i + step + TONES.length) % TONES.length];
+    renderTones();
+    $('#tones [aria-checked="true"]').focus();
+  });
+
+  /* ---------- Bộ đếm ký tự ---------- */
+  function counter(len, platId) {
+    const max = platInfo(platId).max;
+    let cls = 'text-mute', note = '';
+    if (len > max) { cls = 'text-red-600 font-semibold'; note = ` · Vượt giới hạn ${fmtNum(max)} ký tự, hãy rút gọn trước khi đăng`; }
+    else if (len >= max * WARN_RATIO) { cls = 'text-amber-600 font-semibold'; note = ' · Sắp chạm giới hạn'; }
+    return { html: `<span class="${cls}">${fmtNum(len)} / ${fmtNum(max)} ký tự${note}</span>`, over: len > max };
+  }
+
+  /* ---------- Gọi API (qua proxy) ---------- */
+  async function requestGenerate(input, avoid) {
+    let res;
+    try {
+      res = await fetch('/.netlify/functions/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...input, avoid })
+      });
+    } catch (_) {
+      throw { code: 'NETWORK', title: 'Không kết nối được', message: 'Kiểm tra kết nối mạng và đảm bảo máy chủ đang chạy (node server.js), rồi thử lại.' };
+    }
+    let json = null;
+    try { json = await res.json(); } catch (_) {}
+    if (!res.ok || !json || !json.data) {
+      const code = json && json.error && json.error.code;
+      const msg = (json && json.error && json.error.message) || `Máy chủ trả về lỗi ${res.status}.`;
+      const titles = { NO_KEY: 'Chưa có API key', BAD_KEY: 'API key không hợp lệ', RATE_LIMIT: 'Hết lượt gọi tạm thời' };
+      throw { code, title: titles[code] || 'Chưa tạo được nội dung', message: msg };
+    }
+    return json;
+  }
+
+  function setBusy(b) {
+    state.busy = b;
+    const btn = $('#genBtn');
+    btn.disabled = b;
+    btn.innerHTML = b ? '<span class="spinner"></span> Đang tạo…' : 'Tạo caption';
+  }
+
+  function view(which) {
+    ['empty', 'loading', 'errorBox', 'results'].forEach((id) => $('#' + id).classList.toggle('hidden', id !== which));
+  }
+
+  function readForm() {
+    return {
+      product: $('#product').value.trim(),
+      description: $('#description').value.trim(),
+      audience: $('#audience').value.trim(),
+      platform: state.platform,
+      tone: state.tone
+    };
+  }
+
+  async function generate(input, isRegen) {
+    if (state.busy) return;
+    const avoid = isRegen && state.result ? [...state.result.captions, ...state.result.headlines].map((s) => s.slice(0, 120)) : [];
+    setBusy(true);
+    view('loading');
+    $('#resultsPane').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try {
+      const { data, model } = await requestGenerate(input, avoid);
+      state.input = input;
+      state.result = data;
+      addHistory(input, data, model);
+      setStatus('ok');
+      renderResults();
+    } catch (err) {
+      if (err.code === 'NO_KEY') setStatus('nokey');
+      else if (err.code === 'BAD_KEY') setStatus('badkey');
+      else if (err.code === 'NETWORK') setStatus('offline');
+      $('#errorTitle').textContent = err.title || 'Chưa tạo được nội dung';
+      $('#errorMsg').textContent = err.message || 'Đã có lỗi xảy ra. Thử lại sau.';
+      view('errorBox');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  $('#genForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = readForm();
+    const err = $('#formError');
+    if (!input.product) {
+      err.textContent = 'Vui lòng nhập tên sản phẩm.';
+      err.classList.remove('hidden');
+      $('#product').focus();
+      return;
+    }
+    err.classList.add('hidden');
+    generate(input, false);
+  });
+  $('#retryBtn').addEventListener('click', () => { if (state.input) generate(state.input, !!state.result); else $('#genForm').requestSubmit(); });
+
+  /* ---------- Chia sẻ thật: Web Share API + dự phòng ---------- */
+  // Nội dung chia sẻ = headline + caption + hashtag (bỏ phần nào chưa có).
+  function composePost({ text, headline, hashtags }) {
+    const tags = Array.isArray(hashtags) ? hashtags.join(' ') : '';
+    return [headline, text, tags].filter((s) => s && String(s).trim()).join('\n\n');
+  }
+
+  async function sharePost(post, platId) {
+    const text = composePost(post);
+    if (!text) return;
+    const plat = platInfo(platId);
+
+    if (navigator.share) {
+      const data = { title: 'AdGenie', text };
+      try {
+        if (navigator.canShare && !navigator.canShare(data)) throw new Error('unsupported');
+        await navigator.share(data);              // mở menu chia sẻ gốc của thiết bị
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;  // người dùng tự đóng menu, không làm gì thêm
+        // lỗi khác (không được phép, không hỗ trợ...) → chuyển sang dự phòng
+      }
+    }
+    fallbackShare(text, plat);
+  }
+
+  // Dự phòng: sao chép nội dung → mở nhanh trang của nền tảng → hướng dẫn dán.
+  async function fallbackShare(text, plat) {
+    const copied = await copyQuiet(text);
+    const url = plat.shareUrl ? plat.shareUrl(text) : plat.url;
+    let opened = false;
+    if (copied) {
+      const w = window.open(url, '_blank');
+      if (w) { try { w.opener = null; } catch (_) {} opened = true; }
+    }
+    if (opened) toast(`Đã sao chép! Dán nội dung vào ${plat.label}.`, 3500);
+    else openShareDialog({ text, plat, url, copied });
+  }
+
+  function openShareDialog({ text, plat, url, copied }) {
+    $('#shareDlgPlat').textContent = plat.label;
+    $('#shareDlgPlat2').textContent = plat.label;
+    $('#shareDlgIntro').textContent = 'Trình duyệt này chưa hỗ trợ chia sẻ trực tiếp, nên AdGenie hướng dẫn bạn đăng thủ công.';
+    const s1 = $('#shareStep1'), s1t = $('#shareStep1Text'), ta = $('#shareDlgText');
+    if (copied) {
+      s1.className = 'shrink-0 grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold';
+      s1t.textContent = 'Đã sao chép nội dung vào bộ nhớ tạm.';
+      ta.classList.add('hidden');
+    } else {
+      s1.className = 'shrink-0 grid place-items-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold';
+      s1t.textContent = 'Chưa sao chép tự động được. Hãy chọn và sao chép nội dung bên dưới.';
+      ta.value = text; ta.classList.remove('hidden');
+    }
+    const open = $('#shareDlgOpen');
+    open.href = url;
+    open.textContent = `Mở ${plat.label}`;
+    const dlg = $('#shareDialog');
+    dlg.classList.remove('hidden'); dlg.classList.add('flex');
+    open.focus();
+  }
+  function closeShareDialog() {
+    const dlg = $('#shareDialog');
+    dlg.classList.add('hidden'); dlg.classList.remove('flex');
+  }
+  $('#shareDlgClose').addEventListener('click', closeShareDialog);
+  $('#shareBackdrop').addEventListener('click', closeShareDialog);
+  $('#shareDlgOpen').addEventListener('click', () => setTimeout(closeShareDialog, 150));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeShareDialog(); });
+
+  /* ---------- Hiển thị kết quả ---------- */
+  function renderResults() {
+    const r = state.result, p = state.input.platform;
+    const platLabel = platInfo(p).label;
+    const caps = r.captions.map((c, i) => {
+      const k = counter(c.length, p);
+      return `
+      <article class="rounded-2xl border border-lav-200 bg-lav-50 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <span class="inline-flex items-center rounded-full bg-white border border-lav-200 px-3 py-1 text-xs font-semibold text-navy-700">Caption ${i + 1}</span>
+        </div>
+        <p class="whitespace-pre-wrap leading-relaxed">${esc(c)}</p>
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <p class="text-xs" data-count="${i}">${k.html}</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="btn btn-outline btn-sm" data-act="copy-cap" data-i="${i}">Sao chép</button>
+            <button class="btn btn-soft btn-sm" data-act="sched-cap" data-i="${i}">Lên lịch</button>
+            <button class="btn btn-primary btn-sm" data-act="share-cap" data-i="${i}">${ICON_SHARE} Chia sẻ</button>
+          </div>
+        </div>
+      </article>`;
+    }).join('');
+    const heads = r.headlines.map((h, i) => `
+      <div class="rounded-2xl border border-gray-100 bg-white shadow-sm px-4 py-3 flex items-center justify-between gap-4">
+        <p class="font-semibold leading-snug">${esc(h)}</p>
+        <button class="btn btn-outline btn-sm shrink-0" data-act="copy-head" data-i="${i}">Sao chép</button>
+      </div>`).join('');
+    const tags = r.hashtags.map((h, i) =>
+      `<button class="tag" data-act="copy-tag" data-i="${i}" title="Sao chép ${esc(h)}">${esc(h)}</button>`).join('');
+
+    $('#results').innerHTML = `
+      <div class="rise space-y-8">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="rounded-full bg-navy-800 text-white px-3.5 py-1 text-xs font-semibold">${esc(platLabel)}</span>
+            <span class="rounded-full bg-lav-100 text-navy-700 px-3.5 py-1 text-xs font-semibold">${esc(state.input.tone)}</span>
+            <span class="text-sm text-mute truncate max-w-[14rem]">${esc(state.input.product)}</span>
+          </div>
+          <button id="regenBtn" class="btn btn-outline btn-sm">Tạo lại</button>
+        </div>
+        <section>
+          <h2 class="text-lg font-bold mb-3">Caption</h2>
+          <div class="space-y-3">${caps}</div>
+        </section>
+        <section>
+          <h2 class="text-lg font-bold mb-3">Headline</h2>
+          <div class="space-y-2">${heads}</div>
+        </section>
+        <section>
+          <div class="flex items-center justify-between mb-3 gap-3">
+            <h2 class="text-lg font-bold">Hashtag</h2>
+            <button class="btn btn-soft btn-sm" data-act="copy-tags">Sao chép tất cả</button>
+          </div>
+          <div class="flex flex-wrap gap-2">${tags}</div>
+        </section>
+      </div>`;
+    view('results');
+  }
+
+  // Mỗi caption đi kèm headline cùng số thứ tự và toàn bộ hashtag.
+  const postFromResult = (r, i) => ({ text: r.captions[i], headline: r.headlines[i], hashtags: r.hashtags });
+
+  $('#results').addEventListener('click', (e) => {
+    if (e.target.closest('#regenBtn')) return generate(state.input, true);
+    const b = e.target.closest('[data-act]');
+    if (!b || !state.result) return;
+    const i = +b.dataset.i, r = state.result;
+    switch (b.dataset.act) {
+      case 'copy-cap': copyText(r.captions[i]); break;
+      case 'copy-head': copyText(r.headlines[i]); break;
+      case 'copy-tag': copyText(r.hashtags[i]); break;
+      case 'copy-tags': copyText(r.hashtags.join(' ')); break;
+      case 'sched-cap': prefillSchedule(r.captions[i], state.input.platform, { headline: r.headlines[i], hashtags: r.hashtags }); break;
+      case 'share-cap': sharePost(postFromResult(r, i), state.input.platform); break;
+    }
+  });
+
+  /* ---------- Lịch sử ---------- */
+  function addHistory(input, result, model) {
+    state.history.unshift({ id: uid(), ts: Date.now(), input, result, model });
+    state.history = state.history.slice(0, HIST_MAX);
+    save(KEY_HIST, state.history);
+    updateCounts();
+  }
+
+  function renderHistory() {
+    const list = $('#histList');
+    $('#histEmpty').classList.toggle('hidden', state.history.length > 0);
+    $('#clearHist').classList.toggle('hidden', state.history.length === 0);
+    list.classList.toggle('hidden', state.history.length === 0);
+    list.innerHTML = state.history.map((h) => {
+      const d = new Date(h.ts);
+      return `
+      <div class="py-4 flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <p class="font-semibold truncate">${esc(h.input.product)}</p>
+          <p class="text-sm text-mute mt-0.5">${esc(platInfo(h.input.platform).label)} · ${esc(h.input.tone)} · ${d.toLocaleDateString('vi-VN')} ${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
+          <p class="text-sm mt-2 text-ink/80 line-2">${esc(h.result.captions[0])}</p>
+        </div>
+        <div class="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 shrink-0">
+          <button class="btn btn-outline btn-sm" data-h="open" data-id="${h.id}">Xem lại</button>
+          <button class="link-danger" data-h="del" data-id="${h.id}">Xóa</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  $('#histList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-h]');
+    if (!b) return;
+    const item = state.history.find((h) => h.id === b.dataset.id);
+    if (!item) return;
+    if (b.dataset.h === 'del') {
+      state.history = state.history.filter((h) => h.id !== item.id);
+      save(KEY_HIST, state.history); updateCounts(); renderHistory();
+      toast('Đã xóa mục lịch sử.');
+    } else {
+      state.input = item.input; state.result = item.result; state.platform = item.input.platform;
+      state.tone = TONES.includes(item.input.tone) ? item.input.tone : state.tone;
+      $('#product').value = item.input.product;
+      $('#description').value = item.input.description || '';
+      $('#audience').value = item.input.audience || '';
+      renderPlatforms(); renderTones(); renderResults(); showTab('create');
+    }
+  });
+
+  $('#clearHist').addEventListener('click', () => {
+    if (!confirm('Xóa toàn bộ lịch sử? Hành động này không hoàn tác được.')) return;
+    state.history = []; save(KEY_HIST, state.history); updateCounts(); renderHistory();
+    toast('Đã xóa toàn bộ lịch sử.');
+  });
+
+  /* ---------- Lên lịch đăng ---------- */
+  const pad = (n) => String(n).padStart(2, '0');
+  const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const todayKey = () => dayKey(new Date());
+  const whenOf = (s) => new Date(`${s.date}T${s.time}`);
+
+  function fillPlatSelect() {
+    $('#schedPlat').innerHTML = PLATFORMS.map((p) => `<option value="${p.id}">${p.label}</option>`).join('');
+  }
+
+  function fillPick() {
+    const opts = [];
+    if (state.result && state.input) state.result.captions.forEach((c, i) => opts.push({ t: c, p: state.input.platform, headline: state.result.headlines[i], hashtags: state.result.hashtags, label: `Kết quả vừa tạo · caption ${i + 1}` }));
+    state.history.slice(0, 15).forEach((h) => h.result.captions.forEach((c, i) => opts.push({ t: c, p: h.input.platform, headline: h.result.headlines[i], hashtags: h.result.hashtags, label: `${h.input.product} · caption ${i + 1}` })));
+    state.pickOpts = opts;
+    $('#schedPick').innerHTML = '<option value="">Tự viết caption</option>' +
+      opts.map((o, i) => `<option value="${i}">${esc(o.label)}</option>`).join('');
+  }
+
+  function updateSchedCounter() {
+    const len = $('#schedText').value.length;
+    $('#schedCount2').innerHTML = len ? counter(len, $('#schedPlat').value).html : '';
+    $('#schedExtraNote').classList.toggle('hidden', !state.schedExtra);
+  }
+
+  function prefillSchedule(text, plat, extra) {
+    showTab('schedule');
+    resetSchedForm();
+    state.schedExtra = extra || null;
+    $('#schedText').value = text;
+    $('#schedPlat').value = plat;
+    if (!$('#schedDate').value) $('#schedDate').value = todayKey();
+    updateSchedCounter();
+    $('#schedText').focus();
+  }
+
+  function resetSchedForm() {
+    state.editingId = null;
+    state.schedExtra = null;
+    $('#schedText').value = '';
+    $('#schedPick').value = '';
+    $('#schedDate').value = '';
+    $('#schedTime').value = '09:00';
+    $('#schedError').classList.add('hidden');
+    $('#schedFormTitle').textContent = 'Lên lịch bài đăng';
+    $('#schedSave').textContent = 'Thêm vào lịch';
+    $('#schedCancelEdit').classList.add('hidden');
+    updateSchedCounter();
+  }
+
+  $('#schedPick').addEventListener('change', (e) => {
+    const o = state.pickOpts[+e.target.value];
+    if (!o) { state.schedExtra = null; updateSchedCounter(); return; }
+    $('#schedText').value = o.t; $('#schedPlat').value = o.p;
+    state.schedExtra = { headline: o.headline, hashtags: o.hashtags };
+    updateSchedCounter();
+  });
+  $('#schedText').addEventListener('input', updateSchedCounter);
+  $('#schedPlat').addEventListener('change', updateSchedCounter);
+  $('#schedCancelEdit').addEventListener('click', resetSchedForm);
+
+  $('#schedForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = $('#schedText').value.trim();
+    const date = $('#schedDate').value, time = $('#schedTime').value;
+    const err = $('#schedError');
+    const problem = !text ? 'Vui lòng chọn hoặc nhập nội dung bài đăng.' : !date ? 'Vui lòng chọn ngày đăng.' : !time ? 'Vui lòng chọn giờ đăng.' : '';
+    if (problem) { err.textContent = problem; err.classList.remove('hidden'); return; }
+    err.classList.add('hidden');
+    const entry = { id: state.editingId || uid(), text, platform: $('#schedPlat').value, date, time };
+    if (state.schedExtra) { entry.headline = state.schedExtra.headline; entry.hashtags = state.schedExtra.hashtags; }
+    if (state.editingId) {
+      state.schedule = state.schedule.map((s) => (s.id === entry.id ? entry : s));
+      toast('Đã cập nhật lịch đăng.');
+    } else {
+      state.schedule.push(entry);
+      toast('Đã thêm vào lịch.');
+    }
+    save(KEY_SCHED, state.schedule);
+    const d = new Date(date + 'T00:00');
+    state.calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+    state.selectedDay = date;
+    resetSchedForm(); updateCounts(); renderCalendar(); renderSchedList();
+  });
+
+  /* Lịch tháng */
+  function renderCalendar() {
+    const m = state.calMonth, y = m.getFullYear(), mo = m.getMonth();
+    $('#calTitle').textContent = `Tháng ${mo + 1}/${y}`;
+    $('#calHead').innerHTML = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => `<div class="py-1">${d}</div>`).join('');
+    const first = new Date(y, mo, 1);
+    const offset = (first.getDay() + 6) % 7; // tuần bắt đầu từ thứ Hai
+    const days = new Date(y, mo + 1, 0).getDate();
+    const counts = {};
+    state.schedule.forEach((s) => { counts[s.date] = (counts[s.date] || 0) + 1; });
+    let html = '';
+    for (let i = 0; i < offset; i++) html += '<div></div>';
+    for (let d = 1; d <= days; d++) {
+      const key = `${y}-${pad(mo + 1)}-${pad(d)}`;
+      const cls = ['cal-day', key === todayKey() ? 'today' : '', key === state.selectedDay ? 'sel' : ''].join(' ');
+      html += `<button type="button" class="${cls}" data-day="${key}" aria-label="Ngày ${d}${counts[key] ? `, ${counts[key]} bài` : ''}">${d}${counts[key] ? '<span class="dot"></span>' : ''}</button>`;
+    }
+    $('#calGrid').innerHTML = html;
+  }
+
+  $('#calGrid').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-day]');
+    if (!b) return;
+    state.selectedDay = state.selectedDay === b.dataset.day ? null : b.dataset.day;
+    if (state.selectedDay && !state.editingId && !$('#schedText').value) $('#schedDate').value = state.selectedDay;
+    renderCalendar(); renderSchedList();
+  });
+  $('#calPrev').addEventListener('click', () => { state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() - 1, 1); renderCalendar(); });
+  $('#calNext').addEventListener('click', () => { state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() + 1, 1); renderCalendar(); });
+  $('#calToday').addEventListener('click', () => { const n = new Date(); state.calMonth = new Date(n.getFullYear(), n.getMonth(), 1); state.selectedDay = todayKey(); renderCalendar(); renderSchedList(); });
+  $('#listAll').addEventListener('click', () => { state.selectedDay = null; renderCalendar(); renderSchedList(); });
+
+  /* Danh sách bài đã lên lịch */
+  function renderSchedList() {
+    const sel = state.selectedDay;
+    let items = state.schedule.slice().sort((a, b) => whenOf(a) - whenOf(b));
+    if (sel) items = items.filter((s) => s.date === sel);
+    $('#listTitle').textContent = sel ? `Ngày ${new Date(sel + 'T00:00').toLocaleDateString('vi-VN')}` : 'Tất cả bài đã lên lịch';
+    $('#listAll').classList.toggle('hidden', !sel);
+    const list = $('#schedList');
+    if (!items.length) {
+      list.innerHTML = `<p class="py-8 text-center text-mute">${sel ? 'Chưa có bài nào trong ngày này.' : 'Chưa có bài nào được lên lịch. Chọn một caption và đặt ngày giờ ở bên trái.'}</p>`;
+      return;
+    }
+    const now = new Date();
+    list.innerHTML = items.map((s) => {
+      const w = whenOf(s), past = w < now;
+      return `
+      <div class="py-4">
+        <div class="flex flex-wrap items-center gap-2 mb-2">
+          <span class="rounded-full bg-navy-800 text-white px-3 py-1 text-xs font-semibold">${esc(platInfo(s.platform).label)}</span>
+          <span class="text-sm font-semibold">${w.toLocaleDateString('vi-VN')} lúc ${esc(s.time)}</span>
+          ${past ? '<span class="rounded-full bg-amber-50 text-amber-700 px-2.5 py-0.5 text-xs font-medium">Đã qua giờ đăng</span>' : ''}
+        </div>
+        <p class="text-sm text-ink/80 whitespace-pre-wrap break-words line-3">${esc(s.text)}</p>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <button class="btn btn-primary btn-sm" data-s="share" data-id="${s.id}">${ICON_SHARE} Chia sẻ</button>
+          <button class="btn btn-outline btn-sm" data-s="copy" data-id="${s.id}">Sao chép</button>
+          <button class="btn btn-soft btn-sm" data-s="edit" data-id="${s.id}">Sửa</button>
+          <button class="link-danger" data-s="del" data-id="${s.id}">Hủy lịch</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  $('#schedList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-s]');
+    if (!b) return;
+    const s = state.schedule.find((x) => x.id === b.dataset.id);
+    if (!s) return;
+    if (b.dataset.s === 'copy') return copyText(composePost(s));
+    if (b.dataset.s === 'share') return sharePost({ text: s.text, headline: s.headline, hashtags: s.hashtags }, s.platform);
+    if (b.dataset.s === 'del') {
+      if (!confirm('Hủy lịch đăng này?')) return;
+      state.schedule = state.schedule.filter((x) => x.id !== s.id);
+      if (state.editingId === s.id) resetSchedForm();
+      save(KEY_SCHED, state.schedule); updateCounts(); renderCalendar(); renderSchedList();
+      return toast('Đã hủy lịch đăng.');
+    }
+    // sửa
+    state.editingId = s.id;
+    state.schedExtra = s.headline || s.hashtags ? { headline: s.headline, hashtags: s.hashtags } : null;
+    $('#schedText').value = s.text; $('#schedPlat').value = s.platform;
+    $('#schedDate').value = s.date; $('#schedTime').value = s.time;
+    $('#schedFormTitle').textContent = 'Chỉnh sửa lịch đăng';
+    $('#schedSave').textContent = 'Lưu thay đổi';
+    $('#schedCancelEdit').classList.remove('hidden');
+    updateSchedCounter();
+    $('#schedForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#schedText').focus();
+  });
+
+  /* ---------- Khởi tạo ---------- */
+  renderPlatforms();
+  renderTones();
+  fillPlatSelect();
+  updateCounts();
+  view('empty');
+  checkAI();
+})();
+</script>
+</body>
+</html>
