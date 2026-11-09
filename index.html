@@ -479,6 +479,44 @@
     return json;
   }
 
+  /* ---------- Nội dung mẫu khi không gọi được AI ---------- */
+  const cut = (s, max) => (s.length <= max ? s : s.slice(0, max - 1).replace(/\s+\S*$/, '') + '…');
+  const pick = (arr, n) => arr[((n % arr.length) + arr.length) % arr.length];
+  const slug = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .split(/[^A-Za-z0-9]+/).filter(Boolean).slice(0, 4).map((w) => w[0].toUpperCase() + w.slice(1)).join('');
+
+  const SAMPLE = {
+    hooks: {
+      'Hài hước': ['{P} đến rồi, ví tiền xin phép run nhẹ.', 'Nghe nói ai dùng {P} cũng hỏi: sao không biết sớm hơn?', '{P}: nhỏ thôi nhưng có võ.', 'Cảnh báo: {P} dễ gây nghiện, tác dụng phụ là vui.', 'Tin vui cho {W}: {P} xuất hiện rồi đây.'],
+      'Trang trọng': ['Trân trọng giới thiệu {P}.', '{P}: giải pháp được chọn lọc kỹ lưỡng dành cho {W}.', 'Chất lượng làm nên giá trị của {P}.', 'Chúng tôi hân hạnh mang đến {P} cho {W}.', '{P} – sự lựa chọn đáng tin cậy.'],
+      'Trẻ trung': ['{P} chính thức xuất hiện, cập nhật ngay nha!', 'Chốt đơn {P} chưa nè?', '{P} – chạm là mê.', 'Hội {W} ơi, {P} đây rồi!', 'Làm mới ngày dài cùng {P} thôi.']
+    },
+    body: {
+      'Hài hước': 'Dùng thử một lần là hiểu vì sao ai cũng khen.',
+      'Trang trọng': 'Sản phẩm hướng đến chất lượng ổn định và trải nghiệm đáng tin cậy.',
+      'Trẻ trung': 'Dễ dùng, dễ mê, hợp với nhịp sống của bạn.'
+    },
+    ctas: {
+      'Hài hước': ['Bình luận “muốn” để được rủ rê nhé.', 'Nhắn tin ngay kẻo hết lượt rủ rê.', 'Chia sẻ cho đứa bạn cần nó nhất.'],
+      'Trang trọng': ['Vui lòng liên hệ để được tư vấn chi tiết.', 'Kính mời quý khách để lại thông tin để được hỗ trợ.', 'Liên hệ ngay để nhận thông tin ưu đãi mới nhất.'],
+      'Trẻ trung': ['Nhắn tin để được tư vấn nha!', 'Comment “mê” để nhận ưu đãi nè.', 'Tag đứa bạn thân vào xem ngay!']
+    },
+    ctaShort: {
+      'Hài hước': ['Xem ngay kẻo tiếc!', 'Nhắn mình nha!'],
+      'Trang trọng': ['Liên hệ để được tư vấn.', 'Tìm hiểu thêm ngay hôm nay.'],
+      'Trẻ trung': ['Xem ngay nha!', 'Nhắn mình liền nè!']
+    },
+    emoji: { 'Hài hước': ['😄', '🔥', '😎'], 'Trang trọng': ['', '', ''], 'Trẻ trung': ['✨', '💜', '🚀'] },
+    heads: {
+      'Hài hước': ['{P}: thử một lần là nghiện', 'Đừng nói ai biết {P} xịn vậy', '{P} – vui từ lúc mở hộp', 'Có {P}, ngày thường thành ngày hội', '{P}: nhỏ mà có võ'],
+      'Trang trọng': ['{P} – Chất lượng đáng tin cậy', 'Giải pháp tối ưu từ {P}', '{P}: Tinh tuyển dành cho {W}', 'Nâng tầm trải nghiệm cùng {P}', '{P} – Giá trị bền vững'],
+      'Trẻ trung': ['{P} – Chạm là mê', 'Nâng cấp mỗi ngày cùng {P}', '{P} đã sẵn sàng cho bạn', 'Thử {P} đi, mê liền!', '{P} – Chất theo cách của bạn']
+    },
+    toneTag: { 'Hài hước': '#VuiMoiNgay', 'Trang trọng': '#ChatLuong', 'Trẻ trung': '#SongTre' },
+    platTag: { facebook: '#MuaSamThongMinh', instagram: '#InstagramVN', tiktok: '#XuHuong', linkedin: '#KinhDoanh', threads: '#ThreadsVN', x: '#Trending' }
+  };
+
+
   function setBusy(b) {
     state.busy = b;
     const btn = $('#genBtn');
